@@ -92,8 +92,9 @@ describe("dashboard in a real browser", () => {
     if (!browser) return;
     const { page } = await open();
     await chooseProject(page, "fixture-js-esm");
-    const tiles = await page.locator(".tile").allInnerTexts();
-    expect(tiles.map((t) => t.replace(/\s+/g, " ").trim())).toEqual(expect.arrayContaining(["6 files", "2 cycles", "10 import edges"]));
+    // Read value and label separately: innerText whitespace between block children varies by platform.
+    const tiles = await page.locator(".tile").evaluateAll((els) => els.map((el) => `${el.querySelector(".tile-value")?.textContent} ${el.querySelector(".tile-label")?.textContent}`));
+    expect(tiles).toEqual(expect.arrayContaining(["6 files", "2 cycles", "10 import edges"]));
     await expect.poll(() => page.locator(".canvas-empty").isHidden()).toBe(true);
     expect(await page.locator("#graph canvas").count()).toBeGreaterThan(0);
     await page.close();
