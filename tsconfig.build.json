@@ -1,0 +1,44 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/graph-engine"
+    },
+    {
+      "path": "packages/scanner"
+    },
+    {
+      "path": "packages/parser-runtime"
+    },
+    {
+      "path": "packages/adapters/javascript-typescript"
+    },
+    {
+      "path": "packages/adapters/python"
+    },
+    {
+      "path": "packages/resolvers/javascript-typescript"
+    },
+    {
+      "path": "packages/resolvers/python"
+    },
+    {
+      "path": "packages/storage-sqlite"
+    },
+    {
+      "path": "packages/exporters"
+    },
+    {
+      "path": "packages/rasterizer-png"
+    },
+    {
+      "path": "packages/application"
+    },
+    {
+      "path": "apps/cli"
+    }
+  ]
+}

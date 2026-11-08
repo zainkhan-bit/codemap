@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.codemap-test-data/
+*.log

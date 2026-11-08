@@ -1,0 +1,19 @@
+{
+  "name": "@codemap/rasterizer-png",
+  "version": "0.1.0",
+  "description": "Optional SVG-to-PNG rasterizer for CodeMap exports (isolated native dependency).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

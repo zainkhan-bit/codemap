@@ -1,0 +1,10 @@
+{
+  // tsconfig with comments and trailing commas
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/*"],
+    },
+  },
+}

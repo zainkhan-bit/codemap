@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+  - packages/adapters/*
+  - packages/resolvers/*
+
+# better-sqlite3 must run its install script to fetch/build the native binding.
+onlyBuiltDependencies:
+  - better-sqlite3
+
+# Grammar packages ship prebuilt .wasm files; their native install scripts are not needed.
+ignoredBuiltDependencies:
+  - tree-sitter-javascript
+  - tree-sitter-python
+  - tree-sitter-typescript

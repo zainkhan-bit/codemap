@@ -1,0 +1,17 @@
+{
+  "name": "@codemap/adapter-javascript-typescript",
+  "version": "0.1.0",
+  "description": "JavaScript/TypeScript/JSX/TSX syntax extraction adapter.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": { "@codemap/contracts": "workspace:*", "@codemap/parser-runtime": "workspace:*", "tree-sitter-javascript": "0.25.0", "tree-sitter-typescript": "0.23.2" }
+}

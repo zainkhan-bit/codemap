@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"],
+  "references": [{ "path": "../contracts" }, { "path": "../scanner" }, { "path": "../adapters/javascript-typescript" }, { "path": "../adapters/python" }, { "path": "../resolvers/javascript-typescript" }, { "path": "../resolvers/python" }, { "path": "../graph-engine" }, { "path": "../storage-sqlite" }, { "path": "../exporters" }, { "path": "../rasterizer-png" }]
+}

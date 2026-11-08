@@ -1,0 +1,28 @@
+{
+  "name": "codemap-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -b tsconfig.build.json",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "lint": "node scripts/check-boundaries.mjs",
+    "test": "tsc -b tsconfig.build.json && vitest run",
+    "test:watch": "vitest",
+    "clean": "node scripts/clean.mjs",
+    "codemap": "node apps/cli/dist/index.js",
+    "test:unit": "vitest run --exclude tests/integration/** --exclude tests/security/**"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.19.2",
+    "better-sqlite3": "12.11.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

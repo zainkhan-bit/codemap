@@ -1,0 +1,8 @@
+[project]
+name = "pyfix"
+version = "0.1.0"
+dependencies = ["requests>=2.31", "PyYAML"]
+classifiers = ["Programming Language :: Python"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

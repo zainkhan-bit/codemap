@@ -1,0 +1,32 @@
+{
+  "name": "@codemap/application",
+  "version": "0.1.0",
+  "description": "Scan orchestration and use cases; the composition root.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@codemap/contracts": "workspace:*",
+    "@codemap/scanner": "workspace:*",
+    "@codemap/adapter-javascript-typescript": "workspace:*",
+    "@codemap/adapter-python": "workspace:*",
+    "@codemap/resolver-javascript-typescript": "workspace:*",
+    "@codemap/resolver-python": "workspace:*",
+    "@codemap/graph-engine": "workspace:*",
+    "@codemap/storage-sqlite": "workspace:*",
+    "@codemap/exporters": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@codemap/rasterizer-png": "workspace:*"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@codemap/exporters",
+  "version": "0.1.0",
+  "description": "JSON, SVG and Mermaid exporters for CodeMap graphs.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": { "@codemap/contracts": "workspace:*", "@codemap/graph-engine": "workspace:*" }
+}
