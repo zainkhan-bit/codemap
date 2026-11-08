@@ -32,6 +32,10 @@ node apps/cli/dist/index.js --help
 `pnpm link --global` inside `apps/cli` puts `codemap` on your PATH. `better-sqlite3` installs a
 prebuilt native binary for your platform; parsing uses WebAssembly grammars and needs no compiler.
 
+If install fails on Windows with `Could not find any Visual Studio installation`, the prebuilt
+SQLite binary download failed (it is intermittently flaky) and the installer fell back to compiling.
+Re-run `pnpm install`; installing the Visual Studio C++ build tools also works.
+
 ## Quick start
 
 ```bash

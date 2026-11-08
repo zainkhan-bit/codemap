@@ -24,7 +24,18 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # better-sqlite3 downloads a prebuilt binary at install time. That download is intermittently
+      # flaky on hosted runners; Linux/macOS then compile from source, but Windows runners have no
+      # C++ toolchain, so a transient failure must be retried rather than fail the job.
+      - name: Install dependencies (with retry)
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            pnpm install --frozen-lockfile && exit 0
+            echo "::warning::pnpm install failed (attempt $attempt); retrying"
+            sleep $((attempt * 10))
+          done
+          exit 1
       - run: pnpm lint
       - run: pnpm build
       - run: pnpm exec vitest run
@@ -32,21 +43,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          packs="$RUNNER_TEMP/packs"; smoke="$RUNNER_TEMP/smoke"
+          # POSIX-style paths so the same script works in Git Bash on Windows.
+          tmp="$(cd "$RUNNER_TEMP" && pwd)"; repo="$(cd "$GITHUB_WORKSPACE" && pwd)"
+          packs="$tmp/packs"; smoke="$tmp/smoke"
           mkdir -p "$packs" "$smoke"
           pnpm -r --filter "./packages/**" --filter "./apps/**" exec pnpm pack --pack-destination "$packs"
-          tar -tzf "$packs/codemap-adapter-python-0.1.0.tgz" >/dev/null
+          # Run tar from inside the directory: GNU tar reads "D:..." as a remote host.
+          (cd "$packs" && tar -tzf codemap-adapter-python-0.1.0.tgz >/dev/null)
           cd "$smoke"
           npm init -y >/dev/null
-          npm install --no-audit --no-fund "$packs"/*.tgz
+          installed=false
+          for attempt in 1 2 3; do
+            if npm install --no-audit --no-fund "$packs"/*.tgz; then installed=true; break; fi
+            echo "::warning::npm install failed (attempt $attempt); retrying"
+            sleep $((attempt * 10))
+          done
+          $installed
           test -f node_modules/tree-sitter-python/tree-sitter-python.wasm
           test -f node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm
-          export CODEMAP_DATA_DIR="$RUNNER_TEMP/codemap-data"
+          export CODEMAP_DATA_DIR="$tmp/codemap-data"
           npx codemap --version
           npx codemap doctor
-          npx codemap scan "$GITHUB_WORKSPACE/tests/fixtures/fixture-ts-paths"
-          cd "$GITHUB_WORKSPACE/tests/fixtures/fixture-ts-paths"
-          npx --prefix "$smoke" codemap export --format svg --output "$RUNNER_TEMP/map.svg"
-          test -s "$RUNNER_TEMP/map.svg"
-          npx --prefix "$smoke" codemap export --format png --output "$RUNNER_TEMP/map.png"
-          test -s "$RUNNER_TEMP/map.png"
+          npx codemap scan "$repo/tests/fixtures/fixture-ts-paths"
+          cd "$repo/tests/fixtures/fixture-ts-paths"
+          npx --prefix "$smoke" codemap export --format svg --output "$tmp/map.svg"
+          test -s "$tmp/map.svg"
+          npx --prefix "$smoke" codemap export --format png --output "$tmp/map.png"
+          test -s "$tmp/map.png"
