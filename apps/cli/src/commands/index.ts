@@ -52,10 +52,10 @@ export async function scanCommand(app: CodeMapApplication, args: string[], value
     for (const w of result.configWarnings) out(yellow(`  warning: codemap.config.json: ${w}`));
     out();
     out(dim("Next steps:"));
+    out(dim("  codemap dashboard                   explore the map in your browser"));
     out(dim("  codemap summary                     overview, hotspots and cycles"));
     out(dim("  codemap analyze --cycles            list circular dependencies"));
     out(dim("  codemap export --format svg -o map.svg"));
-    out(dim("  (The interactive dashboard is not part of this release.)"));
   }
   return result.partial ? ExitCodes.PARTIAL : ExitCodes.OK;
 }

@@ -4,3 +4,4 @@ dist/
 coverage/
 .codemap-test-data/
 *.log
+promo/

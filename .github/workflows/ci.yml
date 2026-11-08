@@ -80,3 +80,36 @@ jobs:
           curl -fsS -H "Authorization: Bearer $token" "${base}api/v1/health" | grep -q '"readOnly":true'
           curl -fsS "$base" | grep -q 'id="app"'
           kill "$dash"
+
+  # The one-command installers, run against this commit (cloned from the checkout, not GitHub).
+  installer:
+    name: installer · ${{ matrix.os }}
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: install.sh
+        if: runner.os != 'Windows'
+        env:
+          CODEMAP_REPO: file://${{ github.workspace }}
+          CODEMAP_REF: ${{ github.ref_name }}
+        run: |
+          bash scripts/install.sh
+          ~/.local/bin/codemap scan tests/fixtures/fixture-python
+      - name: install.ps1
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CODEMAP_REPO: ${{ github.workspace }}
+          CODEMAP_REF: ${{ github.ref_name }}
+        run: |
+          ./scripts/install.ps1
+          codemap scan tests/fixtures/fixture-python
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

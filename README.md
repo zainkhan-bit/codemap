@@ -1,15 +1,69 @@
 # CodeMap
 
-**Local-first architecture maps for JavaScript, TypeScript and Python repositories.**
+[![CI](https://github.com/zainkhan-bit/codemap/actions/workflows/ci.yml/badge.svg)](https://github.com/zainkhan-bit/codemap/actions/workflows/ci.yml)
+![Node 24+](https://img.shields.io/badge/node-24%2B-339933)
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-CodeMap scans a repository on your machine and builds an evidence-backed graph of its
-architecture: files, directories, packages, declarations, imports, exports, calls and inheritance.
-It finds circular dependencies, shows hotspots, and exports JSON, SVG or Mermaid — offline, without
-running your code and without writing to your project.
+**See how your codebase is really wired — locally, in one command.**
 
-> Status: **v0.1.0 (pre-release)**. CLI plus a local, read-only dashboard.
+CodeMap scans a JavaScript, TypeScript or Python repository on your machine and builds an
+evidence-backed map of its architecture: files, packages, declarations, imports, exports, calls and
+inheritance. It finds circular dependencies and hotspots, lets you explore everything in a local
+dashboard, and exports JSON, SVG, PNG or Mermaid — offline, without running your code and without
+writing to your project.
 
 ![CodeMap dashboard: project overview, file tree and dependency graph](docs/images/dashboard-overview.png)
+
+## Install — one command
+
+You need **[Node.js 24+](https://nodejs.org)** and **[Git](https://git-scm.com/downloads)**. No
+admin rights, no compiler.
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zainkhan-bit/codemap/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/zainkhan-bit/codemap/main/scripts/install.ps1 | iex
+```
+
+The installer downloads CodeMap into your user folder, builds it, checks it with `codemap doctor`
+and adds a `codemap` command (`~/.local/bin` on macOS/Linux; `%LOCALAPPDATA%\CodeMap\bin`, added
+to your user PATH, on Windows). Run it again to update. Prefer to read scripts before running them?
+They are short: [install.sh](scripts/install.sh) · [install.ps1](scripts/install.ps1).
+
+<details>
+<summary>Manual install from a clone</summary>
+
+```bash
+git clone https://github.com/zainkhan-bit/codemap.git
+cd codemap
+npx pnpm@10.34.9 install
+npx pnpm@10.34.9 build
+node apps/cli/dist/index.js --help
+```
+
+If install fails on Windows with `Could not find any Visual Studio installation`, the prebuilt
+SQLite binary download failed (it is intermittently flaky) and the installer fell back to
+compiling. Run the install again; installing the Visual Studio C++ build tools also works.
+
+**Uninstall**: macOS/Linux `rm -rf ~/.codemap ~/.local/bin/codemap`; Windows: delete
+`%LOCALAPPDATA%\CodeMap\app` and `%LOCALAPPDATA%\CodeMap\bin` and remove the latter from your user
+PATH. Scan data lives in `codemap data location` and is safe to delete.
+</details>
+
+## Use it in 30 seconds
+
+```bash
+cd your-project
+codemap scan .        # build the map (seconds for most repos; re-scans reuse a parse cache)
+codemap dashboard     # explore it in your browser
+```
 
 ## Why
 
@@ -18,27 +72,7 @@ source fact as a *reference* and only draws an *edge* when the target is proven.
 ambiguous and external references stay visible with a reason, and every edge links back to the
 source locations that justify it.
 
-## Install
-
-Requires **Node.js 24 or newer**.
-
-From a clone (until the packages are published to npm):
-
-```bash
-corepack enable
-pnpm install
-pnpm build
-node apps/cli/dist/index.js --help
-```
-
-`pnpm link --global` inside `apps/cli` puts `codemap` on your PATH. `better-sqlite3` installs a
-prebuilt native binary for your platform; parsing uses WebAssembly grammars and needs no compiler.
-
-If install fails on Windows with `Could not find any Visual Studio installation`, the prebuilt
-SQLite binary download failed (it is intermittently flaky) and the installer fell back to compiling.
-Re-run `pnpm install`; installing the Visual Studio C++ build tools also works.
-
-## Quick start
+## CLI
 
 ```bash
 codemap scan .
