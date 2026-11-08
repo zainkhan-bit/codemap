@@ -8,12 +8,12 @@
 | 4 | Deterministic IDs and invariant checks | ✅ | graph-engine tests; e2e "identical across independent scans" |
 | 5 | SQLite write/read/migration/rollback tests | ✅ | `packages/storage-sqlite/src/storage.test.ts` |
 | 6 | CLI scans samples and exports JSON/SVG | ✅ | `tests/integration/cli.e2e.test.ts`; tarball install smoke test (manual, see below) |
-| 7 | Cross-platform CI on Windows, macOS, Linux | ⚠️ **not yet run** | Workflow in `.github/workflows/ci.yml`; only Windows 11 + Node 24 verified locally |
+| 7 | Cross-platform CI on Windows, macOS, Linux | ✅ | [CI run 42467717658](https://github.com/zainkhan-bit/codemap/actions/runs/42467717658): ubuntu, macOS, Windows × Node 24, 26 — 152 passed / 1 skipped on each, plus lint, build and packed-tarball smoke test (scan, SVG and PNG export) |
 | 8 | No project code execution, no project writes | ✅ | `tests/security/security.test.ts` |
 | 9 | Performance baseline documented | ✅ (1k, 10k, 50k) | `docs/development/performance-baseline.md` |
 | 10 | README explains limitations and installation | ✅ | `README.md` |
 
-**v0.1.0 is not releasable until gate 7 passes** (and Node 26 is exercised).
+All ten stage-one gates pass. Stage 6 (local API and dashboard) awaits separate approval.
 
 ## Local verification run
 

@@ -12,8 +12,8 @@ official grammar packages (`tree-sitter-javascript@0.25.0`, `tree-sitter-typescr
 scan time.
 
 Spike result (2026-11-08): all three grammars load and parse on Windows 11 with Node 24.12.0, and
-the packed CLI works when installed from tarballs outside the monorepo. **macOS and Linux have not
-been run yet**; they are covered by the CI matrix, which has not executed (no remote exists).
+the packed CLI works when installed from tarballs outside the monorepo. CI confirmed the same on
+Windows, macOS and Linux with Node 24 and 26.
 
 Parsing runs on the main thread with a per-file time budget (progress-callback cancellation) and
 per-file error isolation instead of a worker-thread pool. Workers would re-initialise WASM per

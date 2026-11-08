@@ -126,7 +126,7 @@ Details: [resolution strategy](docs/architecture/resolution-strategy.md) ·
 - Bare packages not declared in any manifest stay **unresolved** rather than being guessed.
 - Java and Dart are not supported yet.
 - Parsing runs on the main thread with a per-file time budget; there is no worker pool yet.
-- Verified on Windows 11 with Node 24. macOS/Linux and Node 26 are configured in CI but have not run yet.
+- CI covers Windows, macOS and Linux on Node 24 and 26.
 
 ## Privacy and safety
 
