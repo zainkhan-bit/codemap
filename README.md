@@ -7,7 +7,9 @@ architecture: files, directories, packages, declarations, imports, exports, call
 It finds circular dependencies, shows hotspots, and exports JSON, SVG or Mermaid — offline, without
 running your code and without writing to your project.
 
-> Status: **v0.1.0 (pre-release)**. CLI only; the interactive dashboard is planned, not built.
+> Status: **v0.1.0 (pre-release)**. CLI plus a local, read-only dashboard.
+
+![CodeMap dashboard: project overview, file tree and dependency graph](docs/images/dashboard-overview.png)
 
 ## Why
 
@@ -74,6 +76,22 @@ $ codemap analyze --cycles
 No configuration file is needed. Read commands pick the project for the current directory; use
 `--project <id>` or `--scan <id>` to choose explicitly (`codemap projects` lists them).
 
+## Dashboard
+
+```bash
+codemap dashboard            # opens http://127.0.0.1:<port>/ in your browser; Ctrl+C to stop
+codemap dashboard --no-open  # prints the private link instead
+```
+
+Explore the graph (files, modules, calls, symbols, folders), browse the file tree, focus on a
+folder, inspect any file or declaration (imports, importers, calls, callers, exports, inheritance,
+unresolved references with reasons), jump to cycles and unresolved imports, and export the current
+view. Light and dark themes follow your OS.
+
+The dashboard server listens on 127.0.0.1 only, is read-only, and requires a per-run access token
+that travels in the link's `#fragment` (never sent over the network or into logs). See
+[local API and security model](docs/architecture/local-api.md).
+
 ## Commands
 
 ```text
@@ -83,6 +101,7 @@ codemap analyze --cycles [--project <id>] [--scan <id>] [--exclude-type-only] [-
 codemap export --format json|svg|mermaid|png [--output <file>] [--scan <id>] [--project <id>]
                [--view <view>] [--path <dir>] [--force]
 codemap deps <file|symbol|node-id> [--reverse] [--depth <n>] [--json]
+codemap dashboard [--project <id>] [--port <n>] [--no-open]
 codemap projects [--json]
 codemap cache clear [--all]
 codemap data location
@@ -130,8 +149,8 @@ Details: [resolution strategy](docs/architecture/resolution-strategy.md) ·
 
 ## Privacy and safety
 
-- No network requests, telemetry or accounts. The code base contains no network or subprocess
-  modules (enforced in CI).
+- No outbound network requests, telemetry or accounts. Network and subprocess modules are confined
+  to two reviewed files — the loopback dashboard server and the "open browser" helper (enforced in CI).
 - Never executes project code, package scripts, package managers or build tools.
 - Never writes inside the scanned directory. Data lives in `codemap data location`
   (`%LOCALAPPDATA%\CodeMap`, `~/Library/Application Support/CodeMap` or `~/.local/share/codemap`).
@@ -139,6 +158,8 @@ Details: [resolution strategy](docs/architecture/resolution-strategy.md) ·
 - `.env*`, private keys and similar files are never read. Exports contain repository-relative paths
   only; absolute paths that appear in source are replaced with `<absolute-path>`.
 - Symbolic links are never followed.
+- The dashboard binds to 127.0.0.1 only, needs a per-run token, rejects foreign Host/Origin
+  headers, sends a strict Content-Security-Policy and has no write endpoints.
 
 ## Configuration (optional)
 
@@ -178,7 +199,7 @@ pnpm test             # build + unit, conformance, integration and security test
 node tests/performance/bench.mjs 1000 10000
 ```
 
-Architecture: [system overview](docs/architecture/system-overview.md) ·
+Architecture: [system overview](docs/architecture/system-overview.md) · [local API](docs/architecture/local-api.md) ·
 [decisions](docs/decisions) · [contributing](CONTRIBUTING.md) · [security](SECURITY.md).
 
 ## License

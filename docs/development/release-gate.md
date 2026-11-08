@@ -20,8 +20,21 @@ All ten stage-one gates pass. Stage 6 (local API and dashboard) awaits separate 
 Windows 11, Node 24.12.0, pnpm 10.34.9:
 
 - `pnpm build` — success.
-- `pnpm lint` — "Package boundaries OK (13 packages, no cycles, no network/subprocess modules)".
-- `pnpm test` — 11 files, 152 passed, 1 skipped (includes PNG export end to end).
+- `pnpm lint` — "Package boundaries OK (15 packages, no cycles; network and subprocess use confined to 2 reviewed files)".
+- `pnpm test` — 13 files, 180 passed, 1 skipped (includes PNG export, the local server security suite and browser tests).
 - Packaging: every package packed with `pnpm pack`, installed from tarballs with `npm install` into
   an empty directory outside the monorepo; `codemap --version`, `codemap doctor` (all checks ✓),
   `codemap scan` and `codemap export --format svg` succeeded (before the PNG package existed; CI repeats it with PNG).
+
+## Stage 6 (local API and dashboard) — 2026-11-08
+
+| Requirement (blueprint §13 / Stage 6) | Status | Evidence |
+|---|---|---|
+| Read-only versioned local API | ✅ | `packages/server`, [local-api.md](../architecture/local-api.md) |
+| Loopback-only server, ephemeral token via fragment + Bearer | ✅ | `packages/server/src/server.test.ts` |
+| Host/Origin validation, no permissive CORS, CSP, no-referrer | ✅ | server tests |
+| No path traversal, no write endpoint, clear shutdown | ✅ | server tests; Ctrl+C/SIGTERM in `codemap dashboard` |
+| Overview, folder tree, graph explorer | ✅ | `tests/browser/dashboard.e2e.test.ts` |
+| Dependency details, symbol inspector, filters | ✅ | browser tests |
+| Browser (Playwright) and local-server security tests | ✅ | playwright-core with installed Chrome/Edge |
+| UI reads only the canonical API/IR | ✅ | boundary checker: dashboard may import `@codemap/contracts` types only |

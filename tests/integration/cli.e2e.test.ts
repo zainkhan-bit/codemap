@@ -2,6 +2,7 @@
  * End-to-end tests against the built CLI and the fixture repositories (blueprint §17.2–17.3).
  * Run `pnpm build` first (`pnpm test` does this).
  */
+import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -209,6 +210,34 @@ describe("CLI behaviour", () => {
     expect(r.code, r.stderr).toBe(0);
     expect([...readFileSync(out).subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
     expect(runCli(["export", "--format", "png"], { dataDir, cwd: dir }).stderr).toMatch(/--output/);
+  });
+
+  it("serves the dashboard with `codemap dashboard --no-open`", async () => {
+    runCli(["scan", path.join(FIXTURES, "fixture-js-esm")], { dataDir });
+    const child = spawn(process.execPath, [CLI, "dashboard", "--no-open"], { env: { ...process.env, CODEMAP_DATA_DIR: dataDir, NO_COLOR: "1" } });
+    try {
+      const link = await new Promise<string>((resolve, reject) => {
+        let out = "";
+        const timer = setTimeout(() => reject(new Error(`no link printed: ${out}`)), 30_000);
+        child.stdout.on("data", (d: Buffer) => {
+          out += d.toString();
+          const m = /(http:\/\/127\.0\.0\.1:\d+\/)#token=([A-Za-z0-9_-]+)/.exec(out);
+          if (m) {
+            clearTimeout(timer);
+            resolve(m[0]);
+          }
+        });
+        child.on("exit", (code) => reject(new Error(`exited early (${code}): ${out}`)));
+      });
+      const [, base, token] = /(http:\/\/127\.0\.0\.1:\d+\/)#token=([A-Za-z0-9_-]+)/.exec(link)!;
+      expect((await fetch(`${base}api/v1/health`)).status).toBe(401);
+      const health = await fetch(`${base}api/v1/health`, { headers: { Authorization: `Bearer ${token}` } });
+      expect(await health.json()).toMatchObject({ status: "ok", readOnly: true });
+      expect((await fetch(base!)).headers.get("content-security-policy")).toContain("default-src 'none'");
+    } finally {
+      child.kill();
+    }
+    expect(runCli(["dashboard", "--port", "80"], { dataDir }).code).toBe(2);
   });
 
   it("emits machine-readable JSON with progress kept off stdout", () => {

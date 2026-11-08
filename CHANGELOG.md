@@ -25,5 +25,10 @@ Graph schema `1.0` · database schema `1`.
 - Safe scanning: no symlink following, secret-file exclusion, `.gitignore`/`.codemapignore`,
   size and count limits, parse time budget, no writes to the scanned project.
 
+- Local dashboard (`codemap dashboard`): loopback-only, read-only API v1 with per-run bearer token
+  passed via URL fragment, Host/Origin checks, strict CSP; overview, file tree, issues, graph explorer
+  (Cytoscape.js) with five views, filters and search, inspector, exports. API response types are
+  part of `@codemap/contracts`.
+
 ### Known limitations
-See README “Limitations”. No dashboard, Java or Dart in this release.
+See README “Limitations”. No Java or Dart in this release.

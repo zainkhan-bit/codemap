@@ -38,6 +38,9 @@
       "path": "packages/application"
     },
     {
+      "path": "packages/server"
+    },
+    {
       "path": "apps/cli"
     }
   ]

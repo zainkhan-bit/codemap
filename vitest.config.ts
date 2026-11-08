@@ -19,6 +19,7 @@ export default defineConfig({
       "@codemap/exporters": src("packages/exporters"),
       "@codemap/rasterizer-png": src("packages/rasterizer-png"),
       "@codemap/application": src("packages/application"),
+      "@codemap/server": src("packages/server"),
     },
   },
   test: {

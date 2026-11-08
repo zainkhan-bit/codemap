@@ -15,6 +15,22 @@
 | Malformed manifests | Parsed defensively; diagnostics (`SCAN006`), never crashes | security test |
 | Tampered/newer database | Migration checksums; refuse newer schema | storage tests |
 
-Out of scope for v0.1.0: the local HTTP server (not implemented). Its requirements (loopback
-binding, ephemeral token, Host/Origin checks, CSP) are specified in the blueprint §13 and must be
-tested before the dashboard ships.
+## Local dashboard server
+
+**Additional adversaries**: a malicious website open in the user's browser; another user or process
+on the same machine.
+
+| Threat | Mitigation | Verified by |
+|---|---|---|
+| Remote network access | Bound to 127.0.0.1 only | server test (URL/bind) |
+| Website reading the API (CSRF/XHR) | Bearer token required; no cookies; no CORS headers; Origin and Sec-Fetch-Site checks | server tests |
+| DNS rebinding | Host header must be 127.0.0.1/localhost with our port (421 otherwise) | server test |
+| Token leakage | Token only in URL fragment → sessionStorage; stripped from address bar; never in query, logs or Referer (`no-referrer`) | server + browser tests |
+| Local process guessing the token | 256-bit random token, constant-time comparison | server test |
+| Path traversal / arbitrary file read | Static allowlist of four in-memory assets; no file-system access per request | server test |
+| XSS from repository content | Text-only DOM insertion; strict CSP without `unsafe-inline`/eval | browser test with hostile specifiers |
+| Clickjacking | `frame-ancestors 'none'`, `X-Frame-Options: DENY` | server test |
+| Mutation via API | GET/HEAD only; no write use cases exposed | server test |
+
+Residual risk: any local process running as the same user can read the scan database directly; the
+token protects the HTTP surface, not the data directory.

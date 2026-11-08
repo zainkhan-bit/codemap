@@ -8,6 +8,7 @@
 import { parseArgs } from "node:util";
 import { CodeMapApplication, CodeMapError, ExitCodes } from "@codemap/application";
 import { TOOL_VERSION } from "@codemap/contracts";
+import { dashboardCommand } from "./commands/dashboard.js";
 import { analyzeCommand, cacheCommand, dataCommand, depsCommand, doctorCommand, err, exportCommand, projectsCommand, scanCommand, summaryCommand, type GlobalOptions } from "./commands/index.js";
 
 const HELP = `codemap ${TOOL_VERSION} — local-first codebase architecture analysis (read-only, offline)
@@ -19,6 +20,7 @@ Usage:
   codemap export --format json|svg|mermaid|png [--output <file>] [--scan <id>] [--project <id>]
                  [--view <view>] [--path <dir>] [--force]
   codemap deps <file|symbol|node-id> [--reverse] [--depth <n>] [--json]
+  codemap dashboard [--project <id>] [--port <n>] [--no-open]
   codemap projects [--json]
   codemap cache clear [--all]
   codemap data location
@@ -28,6 +30,7 @@ Usage:
 Views: file_dependency_view (default), module_view, directory_view, symbol_view, call_view
 
 Scanning never modifies the repository, never runs project code and makes no network calls.
+The dashboard is served read-only on 127.0.0.1 with a per-run access token.
 Data is stored outside the project (see "codemap data location").
 Exit codes: 0 ok, 1 partial analysis, 2 invalid input, 3 path error, 4 storage error, 5 internal, 130 cancelled.`;
 
@@ -50,6 +53,7 @@ const OPTIONS = {
   all: { type: "boolean" },
   reverse: { type: "boolean" },
   depth: { type: "string" },
+  port: { type: "string" },
 } as const;
 
 async function main(argv: string[]): Promise<number> {
@@ -78,7 +82,7 @@ async function main(argv: string[]): Promise<number> {
   const onSigint = () => {
     interrupts++;
     if (interrupts > 1) process.exit(ExitCodes.CANCELLED);
-    err("\ncancelling… (press Ctrl+C again to force)");
+    err(command === "dashboard" || command === "open" ? "\nstopping…" : "\ncancelling… (press Ctrl+C again to force)");
     controller.abort(new CodeMapError("cancelled", "scan cancelled"));
   };
   process.on("SIGINT", onSigint);
@@ -106,6 +110,9 @@ async function main(argv: string[]): Promise<number> {
         return await cacheCommand(app, args, v, g);
       case "data":
         return await dataCommand(args, g);
+      case "dashboard":
+      case "open":
+        return await dashboardCommand(app, v, controller.signal);
       case "doctor":
         return await doctorCommand(app, g);
       default:

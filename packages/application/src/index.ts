@@ -10,6 +10,11 @@ import {
   DEFAULT_PARSER_LIMITS,
   TOOL_VERSION,
   type CodeMapGraph,
+  type CycleReport,
+  type GraphDiagnostic,
+  type GraphViewResult,
+  type NodeDetailsView,
+  type ProjectSummary,
   type GraphNode,
   type GraphStore,
   type GraphView,
@@ -27,11 +32,17 @@ import { DATABASE_FILE_NAME, DATABASE_SCHEMA_VERSION, SqliteGraphStore, StorageE
 import { analyzeArchitecture, findNode, nodeDetails, projectGraph, traverseDependencies, type ProjectionFilters } from "@codemap/graph-engine";
 import { ExportError, exportJson, exportMermaid, exportPng, exportSvg, type ExportFormat } from "@codemap/exporters";
 import { CodeMapError } from "./errors.js";
+import { dependenciesView, graphView, nodeDetailsView, referencesView, type ReferenceQuery } from "./read-models.js";
 import { ScanProjectUseCase, projectIdFor, type ScanProjectInput, type ScanProjectResult } from "./scan.js";
 
 export * from "./errors.js";
 export * from "./scan.js";
+export * from "./read-models.js";
+export type { CycleReport, ProjectSummary } from "@codemap/contracts";
+
+const GRAPH_CACHE_SIZE = 3;
 export type { ExportFormat } from "@codemap/exporters";
+export type { ProjectionFilters } from "@codemap/graph-engine";
 
 export interface OpenOptions {
   /** Data directory; defaults to the platform user-data directory (or CODEMAP_DATA_DIR). */
@@ -45,24 +56,6 @@ export interface ScanSelector {
   scanId?: string;
   /** Used to pick the project when neither id is given. */
   cwd?: string;
-}
-
-export interface CycleReport {
-  index: number;
-  files: string[];
-  path: string[];
-  selfLoop: boolean;
-}
-
-export interface ProjectSummary {
-  project: { id: string; displayName: string };
-  scan: ScanRecord;
-  metrics: Record<string, number>;
-  cycles: CycleReport[];
-  topFanIn: { path: string; fanIn: number }[];
-  topFanOut: { path: string; fanOut: number }[];
-  isolatedFiles: string[];
-  unresolved: { kind: string; count: number }[];
 }
 
 export interface DoctorCheck {
@@ -97,6 +90,7 @@ export class CodeMapApplication {
   readonly dataDir: string;
   readonly adapters: LanguageAdapter[] = [createJavaScriptTypeScriptAdapter(), createPythonAdapter()];
   readonly resolvers: ReferenceResolver[] = [createJavaScriptTypeScriptResolver(), createPythonResolver()];
+  private readonly graphCache = new Map<string, CodeMapGraph>();
 
   private constructor(
     readonly store: GraphStore,
@@ -181,7 +175,51 @@ export class CodeMapApplication {
 
   async loadGraph(sel: ScanSelector): Promise<{ project: ProjectRecord; scan: ScanRecord; graph: CodeMapGraph }> {
     const { project, scan } = await this.selectScan(sel);
-    return { project, scan, graph: await this.store.loadGraph(scan.scanId) };
+    // Completed snapshots are immutable, so caching by scan ID can never serve stale data.
+    let graph = this.graphCache.get(scan.scanId);
+    if (graph) {
+      this.graphCache.delete(scan.scanId);
+    } else {
+      graph = await this.store.loadGraph(scan.scanId);
+      if (this.graphCache.size >= GRAPH_CACHE_SIZE) this.graphCache.delete(this.graphCache.keys().next().value!);
+    }
+    this.graphCache.set(scan.scanId, graph);
+    return { project, scan, graph };
+  }
+
+  // ------------------------------------------------------------ Read API use cases (local dashboard)
+
+  async listScans(projectId: string): Promise<ScanRecord[]> {
+    if (!(await this.store.getProject(projectId))) throw new CodeMapError("not_found", `project ${projectId} not found`);
+    return (await this.store.listScans(projectId)).filter((s) => s.status === "completed");
+  }
+
+  async getGraphView(scanId: string, view: GraphView, filters: ProjectionFilters = {}, limit = 2000): Promise<GraphViewResult> {
+    const { graph } = await this.loadGraph({ scanId });
+    return graphView(graph, view, filters, limit);
+  }
+
+  async getNodeDetailsById(scanId: string, nodeId: string): Promise<NodeDetailsView> {
+    const { graph } = await this.loadGraph({ scanId });
+    const details = nodeDetailsView(graph, nodeId);
+    if (!details) throw new CodeMapError("not_found", `node ${nodeId} not found in scan ${scanId}`);
+    return details;
+  }
+
+  async getNodeDependenciesById(scanId: string, nodeId: string, opts: { direction: "outgoing" | "incoming"; maxDepth: number }) {
+    const { graph } = await this.loadGraph({ scanId });
+    if (!graph.nodes.some((n) => n.id === nodeId)) throw new CodeMapError("not_found", `node ${nodeId} not found in scan ${scanId}`);
+    return dependenciesView(graph, nodeId, opts);
+  }
+
+  async listReferences(scanId: string, query: ReferenceQuery) {
+    const { graph } = await this.loadGraph({ scanId });
+    return referencesView(graph, query);
+  }
+
+  async listDiagnostics(scanId: string, severities?: string[]): Promise<GraphDiagnostic[]> {
+    const { graph } = await this.loadGraph({ scanId });
+    return severities?.length ? graph.diagnostics.filter((d) => severities.includes(d.severity)) : graph.diagnostics;
   }
 
   // ------------------------------------------------------------ GetProjectSummaryUseCase

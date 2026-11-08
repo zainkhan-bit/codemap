@@ -31,8 +31,10 @@ Rules (enforced by `pnpm lint` → `scripts/check-boundaries.mjs`):
 | `storage-sqlite` | contracts | Tree-sitter |
 | `exporters` | contracts, graph-engine | fs, SQLite, Tree-sitter |
 | `application` | everything above | — |
-| `apps/cli` | application, contracts | SQLite, Tree-sitter |
-| **all** | — | `child_process`, `http(s)`, `net`, `dgram`, `tls`, `vm`, `worker_threads` |
+| `server` | application, contracts, dashboard (assets) | SQLite, Tree-sitter |
+| `apps/cli` | application, server, contracts | SQLite, Tree-sitter |
+| `apps/dashboard` | contracts (types only) | any `node:` module, SQLite, Tree-sitter |
+| **all** | — | `child_process`, `http(s)`, `net`, `dgram`, `tls`, `vm`, `worker_threads` — except `packages/server/src/index.ts` (`node:http`) and `apps/cli/src/open-browser.ts` (`node:child_process`), see ADR-0011 |
 
 The checker also verifies that every imported package is declared in `package.json`, that no
 declared `@codemap/*` dependency is unused, and that package dependencies are acyclic.
@@ -50,8 +52,11 @@ declared `@codemap/*` dependency is unused, and that package dependencies are ac
 | `@codemap/resolver-python` | Static Python import resolution (source roots, stdlib, declared deps). |
 | `@codemap/graph-engine` | Deterministic IDs, graph builder + symbol linker, projections, algorithms, invariants. |
 | `@codemap/storage-sqlite` | Migrations, immutable scan snapshots, artifact cache (`better-sqlite3`). |
-| `@codemap/exporters` | JSON, SVG (own layered layout, no browser), Mermaid; PNG fails clearly. |
+| `@codemap/exporters` | JSON, SVG (own layered layout, no browser), Mermaid; PNG via the optional rasterizer. |
 | `@codemap/application` | Scan pipeline and read use cases. |
+| `@codemap/rasterizer-png` | Optional SVG→PNG rasterizer (isolated native dependency). |
+| `@codemap/server` | Loopback-only, read-only HTTP API v1 + dashboard assets. |
+| `@codemap/dashboard` | Static dashboard (TypeScript + Cytoscape.js, bundled). |
 | `@codemap/cli` | `codemap` command. |
 
 ## Data flow of one scan
@@ -60,7 +65,8 @@ See [scanning-pipeline.md](scanning-pipeline.md). In short:
 files → (adapter) `FileExtraction` facts → (resolver) `ResolutionResult`s → (graph-engine)
 `CodeMapGraph` → invariants → (storage) one transaction → completed snapshot.
 
-## Deferred
+## Local dashboard
 
-`apps/dashboard/` and the loopback HTTP API (blueprint §13) are **not implemented**. They will
-consume `@codemap/application` and the IR; they will never parse source or read SQLite directly.
+`codemap dashboard` → `@codemap/server` → `@codemap/application` use cases. The dashboard reads
+only the API v1 (`@codemap/contracts` `api.ts`); it never parses source or reads SQLite. See
+[local-api.md](local-api.md) and ADR-0011.

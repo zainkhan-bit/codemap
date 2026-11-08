@@ -70,3 +70,13 @@ jobs:
           test -s "$tmp/map.svg"
           npx --prefix "$smoke" codemap export --format png --output "$tmp/map.png"
           test -s "$tmp/map.png"
+          # Dashboard from the packed packages: link printed, API needs the token, assets served.
+          node "$smoke/node_modules/@codemap/cli/dist/index.js" dashboard --no-open > "$tmp/dash.log" 2>&1 &
+          dash=$!
+          for _ in $(seq 1 30); do grep -q '#token=' "$tmp/dash.log" && break; sleep 1; done
+          link="$(grep -o 'http://127\.0\.0\.1:[0-9]*/#token=[A-Za-z0-9_-]*' "$tmp/dash.log")"
+          base="${link%%#*}"; token="${link##*token=}"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "${base}api/v1/health")" = "401"
+          curl -fsS -H "Authorization: Bearer $token" "${base}api/v1/health" | grep -q '"readOnly":true'
+          curl -fsS "$base" | grep -q 'id="app"'
+          kill "$dash"

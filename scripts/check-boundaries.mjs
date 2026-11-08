@@ -25,10 +25,21 @@ const RULES = {
   "packages/exporters": { allow: ["contracts", "graph-engine"], forbid: [/^node:fs/, /^better-sqlite3$/, /^web-tree-sitter$/] },
   "packages/rasterizer-png": { allow: [], forbid: [/^node:fs/, /^better-sqlite3$/, /^web-tree-sitter$/] },
   "packages/application": { allow: ["rasterizer-png", "contracts", "scanner", "adapter-javascript-typescript", "adapter-python", "resolver-javascript-typescript", "resolver-python", "graph-engine", "storage-sqlite", "exporters"], forbid: [] },
-  "apps/cli": { allow: ["contracts", "application"], forbid: [/^better-sqlite3$/, /^web-tree-sitter$/] },
+  "packages/server": { allow: ["contracts", "application", "dashboard"], forbid: [/^better-sqlite3$/, /^web-tree-sitter$/, /^node:fs\/promises$/] },
+  "apps/cli": { allow: ["contracts", "application", "server"], forbid: [/^better-sqlite3$/, /^web-tree-sitter$/] },
+  "apps/dashboard": { allow: ["contracts"], forbid: [/^node:/, /^better-sqlite3$/, /^web-tree-sitter$/] },
 };
-/** Never allowed in shipped code: CodeMap makes no network calls and executes nothing. */
+/** Never allowed in shipped code: CodeMap makes no outbound network calls and executes nothing. */
 const GLOBAL_FORBID = [/^(node:)?(child_process|http|https|http2|net|dgram|tls|worker_threads|vm)$/];
+
+/**
+ * Narrow, reviewed exceptions (ADR-0011): the loopback dashboard server may listen with node:http,
+ * and one CLI file may launch the OS URL handler to open the dashboard.
+ */
+const EXEMPT = {
+  "packages/server/src/index.ts": [/^node:(http|net)$/],
+  "apps/cli/src/open-browser.ts": [/^node:child_process$/],
+};
 
 const errors = [];
 const graph = new Map();
@@ -45,7 +56,7 @@ function sources(dir) {
 
 for (const [dir, rule] of Object.entries(RULES)) {
   const pkg = JSON.parse(readFileSync(path.join(root, dir, "package.json"), "utf8"));
-  const declared = new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.optionalDependencies ?? {})]);
+  const declared = new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.optionalDependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})]);
   const used = new Set();
   const allowed = new Set(rule.allow.map((a) => `@codemap/${a}`));
   for (const file of sources(path.join(root, dir, "src"))) {
@@ -53,16 +64,19 @@ for (const [dir, rule] of Object.entries(RULES)) {
     const text = readFileSync(file, "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
-    for (const m of text.matchAll(/(?:^|\n)\s*(?:import|export)[^"';]*?from\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|require\(\s*["']([^"']+)["']\s*\)/g)) {
-      const spec = m[1] ?? m[2] ?? m[3];
+    for (const m of text.matchAll(/(?:^|\n)\s*(?:import|export)[^"';]*?from\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|require\(\s*["']([^"']+)["']\s*\)|\.resolve\(\s*["']([^"']+)["']\s*\)/g)) {
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
       if (spec.startsWith(".")) continue;
+      // `import type` is erased at compile time, so it cannot load a forbidden module at runtime.
+      const typeOnly = /^\s*(?:import|export)\s+type\s/.test(m[0]);
       const rel = path.relative(root, file);
       const bare = spec.startsWith("@") ? spec.split("/").slice(0, 2).join("/") : spec.split("/")[0];
       if (bare.startsWith("@codemap/")) {
         used.add(bare);
         if (!allowed.has(bare)) errors.push(`${rel}: ${pkg.name} must not import ${bare}`);
       }
-      for (const f of [...rule.forbid, ...GLOBAL_FORBID]) if (f.test(spec)) errors.push(`${rel}: ${pkg.name} must not import "${spec}"`);
+      const exempt = EXEMPT[rel.split(path.sep).join("/")] ?? [];
+      for (const f of [...rule.forbid, ...GLOBAL_FORBID]) if (!typeOnly && f.test(spec) && !exempt.some((x) => x.test(spec))) errors.push(`${rel}: ${pkg.name} must not import "${spec}"`);
       if (!spec.startsWith("node:") && !bare.startsWith("@codemap/") && !declared.has(bare)) errors.push(`${rel}: imports "${bare}" which is not declared in ${dir}/package.json`);
     }
   }
@@ -86,4 +100,4 @@ if (errors.length) {
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log(`Package boundaries OK (${Object.keys(RULES).length} packages, no cycles, no network/subprocess modules).`);
+console.log(`Package boundaries OK (${Object.keys(RULES).length} packages, no cycles; network and subprocess use confined to ${Object.keys(EXEMPT).length} reviewed files).`);

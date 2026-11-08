@@ -13,7 +13,11 @@ installed packages' `package.json` and license files. All are MIT-licensed excep
 | bindings | 1.5.0 | MIT | © 2012 Nathan Rajlich | better-sqlite3 |
 | file-uri-to-path | 1.0.0 | MIT | © 2014 Nathan Rajlich | bindings |
 | @resvg/resvg-js | 2.6.2 | MPL-2.0 | resvg-js contributors (github.com/yisibl/resvg-js; no copyright line in the package) | rasterizer-png (optional; prebuilt per-platform binary) |
+| cytoscape | 3.34.4 | MIT | © The Cytoscape Consortium | dashboard (bundled into `app.js`) |
 | ignore | 7.0.5 | MIT | © 2013 Kael Zhang and contributors | scanner (`.gitignore` semantics) |
+
+Development only (not shipped): `esbuild` 0.28.2 (MIT, bundles the dashboard), `playwright-core`
+1.64.1 (Apache-2.0, drives the locally installed browser in tests).
 
 Install-time only: `prebuild-install` (MIT) downloads the prebuilt `better-sqlite3` binary when
 the CLI is installed. CodeMap itself makes no network requests at scan time.
